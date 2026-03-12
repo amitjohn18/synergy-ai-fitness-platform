@@ -109,7 +109,8 @@ STATIC_URL = '/static/'
 MEDIA_ROOT=os.path.join(BASE_DIR,"media")
 STATICFILES_DIRS=[os.path.join(BASE_DIR,"static")]
 MEDIA_URL='/media/'
-GEMINI_API_KEY='AIzaSyBbm0IFheEAFf63zz5GMU-g9a_KHB1FvZ0'
+# GEMINI_API_KEY='AIzaSyBbm0IFheEAFf63zz5GMU-g9a_KHB1FvZ0'
+GEMINI_API_KEY='AIzaSyAWss3Wtz4M9GNeP_8dx1D7HvGQ-gbUA_o'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field

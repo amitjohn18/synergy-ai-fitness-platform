@@ -1272,73 +1272,64 @@ from django.conf import settings
 
 def calculate_recipe_calories(request):
     if request.method == 'POST':
-        try:
-            body_data = json.loads(request.body)
-            recipe_text = body_data.get('recipe_text', '')
 
-            if not recipe_text:
-                return JsonResponse({'success': False, 'error': 'No recipe provided'}, status=400)
+        body_data = json.loads(request.body)
+        recipe_text = body_data.get('recipe_text', '')
 
-            client = genai.Client(api_key=settings.GEMINI_API_KEY)
+        if not recipe_text:
+            return JsonResponse({'success': False, 'error': 'No recipe provided'}, status=400)
 
-            prompt = f"""
-            Analyze this recipe: "{recipe_text}"
-            Calculate total calories and total weight.
-            Return ONLY a JSON object:
-            {{
-                "total_calories": 0,
-                "total_weight_grams": 0,
-                "calories_per_100g": 0,
-                "ingredients": []
-            }}
-            """
+        client = genai.Client(api_key=settings.GEMINI_API_KEY)
 
-            # --- Retry Logic for 429 Errors ---
-            max_retries = 3
-            response = None
+        prompt = f"""
+        Analyze this recipe: "{recipe_text}"
+        Calculate total calories and total weight.
+        Return ONLY a JSON object:
+        {{
+            "total_calories": 0,
+            "total_weight_grams": 0,
+            "calories_per_100g": 0,
+            "ingredients": []
+        }}
+        """
 
-            for attempt in range(max_retries):
-                try:
-                    response = client.models.generate_content(
-                        model='gemini-2.5-flash',  # STABLE MODEL
-                        contents=prompt,
-                        config=types.GenerateContentConfig(
-                            temperature=0.1,
-                            response_mime_type="application/json"
-                        )
+        # --- Retry Logic for 429 Errors ---
+        max_retries = 3
+        response = None
+
+        for attempt in range(max_retries):
+            try:
+                response = client.models.generate_content(
+                    model='gemini-2.5-flash',  # STABLE MODEL
+                    contents=prompt,
+                    config=types.GenerateContentConfig(
+                        temperature=0.1,
+                        response_mime_type="application/json"
                     )
-                    break  # Success! Exit retry loop.
+                )
+                break  # Success! Exit retry loop.
 
-                except exceptions.ResourceExhausted as e:
-                    if attempt < max_retries - 1:
-                        time.sleep(10)  # Wait 10 seconds and try again
-                        continue
-                    else:
-                        raise e  # Re-raise after all retries fail
+            except exceptions.ResourceExhausted as e:
+                if attempt < max_retries - 1:
+                    time.sleep(10)  # Wait 10 seconds and try again
+                    continue
+                else:
+                    raise e  # Re-raise after all retries fail
 
-            # --- Parse Response ---
-            raw_text = response.text.strip()
-            clean_json = re.sub(r'^```json\s*|```$', '', raw_text, flags=re.MULTILINE)
-            result_data = json.loads(clean_json)
-            print("88888************************************************")
-            print(result_data)
-            print("******************************************************")
+        # --- Parse Response ---
+        raw_text = response.text.strip()
+        clean_json = re.sub(r'^```json\s*|```$', '', raw_text, flags=re.MULTILINE)
+        result_data = json.loads(clean_json)
+        print("88888************************************************")
+        print(result_data)
+        print("******************************************************")
 
-            return JsonResponse({
-                'success': True,
-                'data': result_data
-            })
+        return JsonResponse({
+            'success': True,
+            'data': result_data
+        })
 
-        except exceptions.ResourceExhausted:
-            return JsonResponse({
-                'success': False,
-                'error': 'API quota exhausted. Please try again in a few minutes.'
-            }, status=429)
-        except Exception as e:
-            print(f"Error: {e}")
-            return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
-    return JsonResponse({'error': 'Method not allowed'}, status=405)
 
 def build_calorie_calculation_prompt(recipe_data):
     recipe_text = recipe_data.get('recipe_text', '')
@@ -1370,30 +1361,27 @@ def build_calorie_calculation_prompt(recipe_data):
     return prompt
 
 def save_user_intake(request):
-        try:
-            data = json.loads(request.body)
-            print(data)
-            customer_id = data.get('lid')
-            print(customer_id,"-----------------------------------")
-            customer_obj = Customer.objects.get(Login=customer_id)
-            food_entry = Food.objects.create(
-                Customer=customer_obj,
-                type="Recipe Analysis",
-                name=data.get('food_name', 'Unknown Dish'),
-                date=data.get('date', datetime.date.today()),
-                gram=float(data.get('grams_consumed', 0)),
-                callorie=int(float(data.get('calories_consumed', 0)))
-            )
 
-            return JsonResponse({
-                'success': True,
-                'message': 'Food logged successfully!',
-                'id': food_entry.id
-            }, status=201)
+    data = json.loads(request.body)
+    print(data)
+    customer_id = data.get('lid')
+    print(customer_id,"-----------------------------------")
+    customer_obj = Customer.objects.get(Login=customer_id)
+    food_entry = Food.objects.create(
+        Customer=customer_obj,
+        type="Recipe Analysis",
+        name=data.get('food_name', 'Unknown Dish'),
+        date=data.get('date', datetime.date.today()),
+        gram=float(data.get('grams_consumed', 0)),
+        callorie=int(float(data.get('calories_consumed', 0)))
+    )
 
-        except Exception as e:
-            print(f"Error saving food: {e}")
-            return JsonResponse({'success': False, 'error': str(e)}, status=500)
+    return JsonResponse({
+        'success': True,
+        'message': 'Food logged successfully!',
+        'id': food_entry.id
+    }, status=201)
+
 
 def user_view_user(request):
     lid = request.POST['lid']
@@ -1490,3 +1478,17 @@ def web_forgot_password(request):
         return redirect('/')
     else:
         return redirect('/forgotpassword_get/')
+
+
+
+
+def user_view_profile(request):
+    lid=request.POST['lid']
+    var=Customer.objects.get(Login_id=lid)
+    return JsonResponse(
+        {
+            'id':str(var.id),
+            'Name':str(var.Name),
+            'Photo':str(var.Photo.url),
+        }
+    )
