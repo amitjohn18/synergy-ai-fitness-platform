@@ -1216,7 +1216,8 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 
 # 1. Initialize the Client
-GOOGLE_API_KEY = 'AIzaSyCi1l_liPsy6Qt_pI0VYg3GkxK-861RqvY'
+GOOGLE_API_KEY = 'AIzaSyBc_enKL0Q9qMK4jszsr05HO33ZbxDLGbE' \
+                 ''
 client = genai.Client(api_key=GOOGLE_API_KEY)
 
 @csrf_exempt
